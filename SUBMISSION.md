@@ -4,6 +4,7 @@ Automated Cross-Chain Stop-Loss and Deleverage Guard built with Reactive Smart C
 
 - **Live Web Console:** https://dev-shiki.github.io/reactive-vault-guard/
 - **Repository:** https://github.com/dev-shiki/reactive-vault-guard
+- **Demo Video:** https://youtu.be/XlTw3BZBCOM
 
 ---
 
