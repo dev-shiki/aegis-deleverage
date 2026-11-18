@@ -42,6 +42,9 @@ Automated DeFi Health-Factor & Stop-Loss Guard built for the **Reactive Omni Bui
 | 6 | Base Sepolia (`84532`) | `borrow(3e8)` (`$3.00 USD`, HF `166.66%`) | [`0x46437c90...616a93bc`](https://sepolia.basescan.org/tx/0x46437c90c7533d01843caeaa23feeb033ba0bf300522d14ca0423f50616a93bc) |
 | 7 | Base Sepolia (`84532`) | `configureGuard(ETH, $2,000, 130%, 50%, 30s, true)` | [`0x158160dd...0385f699`](https://sepolia.basescan.org/tx/0x158160ddd9d26b191625cbf79fa1db74af691b4a18c7d9c4865d5a8a0385f699) |
 | 8 | Base Sepolia (`84532`) | `setPrice(ETH, 1800e8)` (Crash Trigger `$2,500 -> $1,800`) | [`0xc3435fca...15661617`](https://sepolia.basescan.org/tx/0xc3435fcaf38e37af16a7a1df545f8bdc2e93124ecd8670faf4bb9c2815661617) |
+| 9 | Base Sepolia (`84532`) | `CallbackProxy.depositTo(ProtectedVault, 0.002 ETH)` | [`0xf7a1a7b3...26773ad`](https://sepolia.basescan.org/tx/0xf7a1a7b3367f542ab0f45602eed5f5b1e879f58edc26382acf9a84eca26773ad) |
+| 10 | Base Sepolia (`84532`) | `configureGuard(...)` Re-sync (Block `60505393`) | [`0xcf1718da...0c19c147`](https://sepolia.basescan.org/tx/0xcf1718da0e3a3d7c22e6336b05b24c41d14cd6255b787dd06ccf61650c19c147) |
+| 11 | Base Sepolia (`84532`) | `setPrice(ETH, 1750e8)` (Trigger `$1,750`, Block `60505478`) | [`0xaf3ba7b3...075897aa`](https://sepolia.basescan.org/tx/0xaf3ba7b349744de7211c8d71e7601525155fed5d3e46239e7692a305075897aa) |
 
 ## Build & Test
 
