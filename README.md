@@ -37,10 +37,11 @@ Automated DeFi Health-Factor & Stop-Loss Guard built for the **Reactive Omni Bui
 | 1 | Base Sepolia (`84532`) | Deploy `PriceOracle` (`0x2AfE...D50E`) | [`0x75e1bae4...a7fad798`](https://sepolia.basescan.org/tx/0x75e1bae43cab67ff29d1b21229607f5f278c001da82fc5cf5abb2796a7fad798) |
 | 2 | Base Sepolia (`84532`) | Deploy `ProtectedVault` (`0x5dEE...13F1`) | [`0xad2a191e...2bc10353`](https://sepolia.basescan.org/tx/0xad2a191e1e85f5d482aac292d1edcdcb9f3d4e260df0f985f71f260b2bc10353) |
 | 3 | Reactive Lasna (`5318007`) | Deploy `ReactiveVaultGuard` & Subscribe via `0x...fffFfF` | [`0xb86b0d0d...09d0777d`](https://lasna.reactscan.net/tx/0xb86b0d0d96c6e94ce5438132b6e00805256499ad59256107cb8e796009d0777d) |
-| 4 | Base Sepolia (`84532`) | `deposit(ETH_ASSET)` (`0.002 ETH`) | [`0x60cb66d8...ff3bdea`](https://sepolia.basescan.org/tx/0x60cb66d8e4acee2c75239f350fb2f4b84ff571a9639d740f05108bee8ff3bdea) |
-| 5 | Base Sepolia (`84532`) | `borrow(3e8)` (`$3.00 USD`, HF `166.66%`) | [`0x158160dd...0385f699`](https://sepolia.basescan.org/tx/0x158160ddd9d26b191625cbf79fa1db74af691b4a18c7d9c4865d5a8a0385f699) |
-| 6 | Base Sepolia (`84532`) | `configureGuard(ETH, $2,000, 130%, 50%, 30s, true)` | [`0x640aa152...08966273`](https://sepolia.basescan.org/tx/0x640aa152aa1c9134ed5cc0ee53ed2a1691c5e1cc361e9cd34037c97908966273) |
-| 7 | Base Sepolia (`84532`) | `setPrice(ETH, 1800e8)` (Crash Trigger `$2,500 -> $1,800`) | [`0xc3435fca...15661617`](https://sepolia.basescan.org/tx/0xc3435fcaf38e37af16a7a1df545f8bdc2e93124ecd8670faf4bb9c2815661617) |
+| 4 | Base Sepolia (`84532`) | `setPrice(ETH, 2500e8)` (`$2,500` baseline) | [`0x60cb66d8...ff3bdea`](https://sepolia.basescan.org/tx/0x60cb66d8e4acee2c75239f350fb2f4b84ff571a9639d740f05108bee8ff3bdea) |
+| 5 | Base Sepolia (`84532`) | `deposit(ETH_ASSET)` (`0.002 ETH`) | [`0x640aa152...08966273`](https://sepolia.basescan.org/tx/0x640aa152aa1c9134ed5cc0ee53ed2a1691c5e1cc361e9cd34037c97908966273) |
+| 6 | Base Sepolia (`84532`) | `borrow(3e8)` (`$3.00 USD`, HF `166.66%`) | [`0x46437c90...616a93bc`](https://sepolia.basescan.org/tx/0x46437c90c7533d01843caeaa23feeb033ba0bf300522d14ca0423f50616a93bc) |
+| 7 | Base Sepolia (`84532`) | `configureGuard(ETH, $2,000, 130%, 50%, 30s, true)` | [`0x158160dd...0385f699`](https://sepolia.basescan.org/tx/0x158160ddd9d26b191625cbf79fa1db74af691b4a18c7d9c4865d5a8a0385f699) |
+| 8 | Base Sepolia (`84532`) | `setPrice(ETH, 1800e8)` (Crash Trigger `$2,500 -> $1,800`) | [`0xc3435fca...15661617`](https://sepolia.basescan.org/tx/0xc3435fcaf38e37af16a7a1df545f8bdc2e93124ecd8670faf4bb9c2815661617) |
 
 ## Build & Test
 
