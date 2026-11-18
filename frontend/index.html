@@ -377,7 +377,7 @@
         </div>
         <div class="field">
           <label for="vaultAddr">ProtectedVault (Base Sepolia 84532)</label>
-          <input id="vaultAddr" class="mono" value="0x5dEE49560fcE0a1bc26EBB6591f58B7A2Af313F1" placeholder="0x... (pending deployment)" />
+          <input id="vaultAddr" class="mono" value="0x5dee49560FcE0a1BC26EBb6591F58B7A2aF313F1" placeholder="0x... (pending deployment)" />
         </div>
         <div class="field">
           <label for="guardAddr">ReactiveVaultGuard (Lasna 5318007)</label>
@@ -556,10 +556,10 @@ Faucet: 0x2afa...5967</div>
         document.getElementById("mBaseBlock").textContent = `#${baseBlk}`;
         document.getElementById("mLasnaBlock").textContent = `#${lasnaBlk}`;
 
-        const oracleAddr = document.getElementById("oracleAddr").value.trim();
-        const vaultAddr = document.getElementById("vaultAddr").value.trim();
-        const guardAddr = document.getElementById("guardAddr").value.trim();
-        const inspectUser = document.getElementById("inspectUser").value.trim();
+        const oracleAddr = document.getElementById("oracleAddr").value.trim().toLowerCase();
+        const vaultAddr = document.getElementById("vaultAddr").value.trim().toLowerCase();
+        const guardAddr = document.getElementById("guardAddr").value.trim().toLowerCase();
+        const inspectUser = document.getElementById("inspectUser").value.trim().toLowerCase();
 
         let priceE8 = 0n;
         if (ethers.isAddress(oracleAddr)) {

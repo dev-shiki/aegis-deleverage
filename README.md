@@ -27,7 +27,7 @@ Automated DeFi Health-Factor & Stop-Loss Guard built for the **Reactive Omni Bui
 | lREACT Faucet (Base Sepolia) | `0x2afaFD298b23b62760711756088F75B7409f5967` (`1 ETH -> 100 lREACT`, max 5 ETH) |
 | lREACT Faucet (Ethereum Sepolia) | `0x9b9BB25f1A81078C544C829c5EB7822d747Cf434` (`1 ETH -> 100 lREACT`, max 5 ETH) |
 | Deployed `PriceOracle` (Base Sepolia `84532`) | [`0x2AfEEC24f2a810D726DB47CAEa3A76AaF6A7D50E`](https://sepolia.basescan.org/address/0x2AfEEC24f2a810D726DB47CAEa3A76AaF6A7D50E) (Tx: [`0x75e1bae4...a7fad798`](https://sepolia.basescan.org/tx/0x75e1bae43cab67ff29d1b21229607f5f278c001da82fc5cf5abb2796a7fad798)) |
-| Deployed `ProtectedVault` (Base Sepolia `84532`) | [`0x5dEE49560fcE0a1bc26EBB6591f58B7A2Af313F1`](https://sepolia.basescan.org/address/0x5dEE49560fcE0a1bc26EBB6591f58B7A2Af313F1) (Tx: [`0xad2a191e...2bc10353`](https://sepolia.basescan.org/tx/0xad2a191e1e85f5d482aac292d1edcdcb9f3d4e260df0f985f71f260b2bc10353)) |
+| Deployed `ProtectedVault` (Base Sepolia `84532`) | [`0x5dee49560FcE0a1BC26EBb6591F58B7A2aF313F1`](https://sepolia.basescan.org/address/0x5dee49560FcE0a1BC26EBb6591F58B7A2aF313F1) (Tx: [`0xad2a191e...2bc10353`](https://sepolia.basescan.org/tx/0xad2a191e1e85f5d482aac292d1edcdcb9f3d4e260df0f985f71f260b2bc10353)) |
 | Deployed `ReactiveVaultGuard` (Reactive Lasna `5318007`) | [`0x2AfEEC24f2a810D726DB47CAEa3A76AaF6A7D50E`](https://lasna.reactscan.net/address/0x2AfEEC24f2a810D726DB47CAEa3A76AaF6A7D50E) (Blk `8636631`, Tx: [`0xb86b0d0d...09d0777d`](https://lasna.reactscan.net/tx/0xb86b0d0d96c6e94ce5438132b6e00805256499ad59256107cb8e796009d0777d)) |
 
 ### Live Verified End-to-End Transactions (Blocks `60334206` & `60334389` / Lasna `8636631`)
