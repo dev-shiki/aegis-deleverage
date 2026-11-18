@@ -1,0 +1,7 @@
+.env
+broadcast/
+cache/
+out/
+lib/
+*.log
+__pycache__/
