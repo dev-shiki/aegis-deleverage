@@ -4,7 +4,7 @@ Autonomous cross-chain stop-loss and cascading deleverage vault built on **`Reac
 
 - **Live Web Console:** https://dev-shiki.github.io/aegis-deleverage/
 - **Repository:** https://github.com/dev-shiki/aegis-deleverage
-- **Demo Video:** *(pending final recording)*
+- **Demo Video:** https://youtu.be/QGzu6UltIy4
 
 ---
 
