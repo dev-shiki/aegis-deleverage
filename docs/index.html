@@ -506,8 +506,9 @@ Faucet: 0x2afa...5967</div>
       "function setPaused(bool _paused)"
     ];
     const GUARD_ABI = [
-      "function watchedGuards(address) view returns (address asset, uint256 stopLossPriceE8, uint256 minHealthFactorBps, uint256 lastTriggeredBlock, bool enabled)",
-      "function getAssetWatcherCount(address asset) view returns (uint256)"
+      "function originChainId() view returns (uint256)",
+      "function priceOracle() view returns (address)",
+      "function protectedVault() view returns (address)"
     ];
 
     const baseRead = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC);
@@ -599,15 +600,18 @@ Faucet: 0x2afa...5967</div>
 
         if (ethers.isAddress(guardAddr) && ethers.isAddress(inspectUser)) {
           const guardC = new ethers.Contract(guardAddr, GUARD_ABI, lasnaRead);
-          const [wg, watchers] = await Promise.all([
-            guardC.watchedGuards(inspectUser),
-            guardC.getAssetWatcherCount(ETH_ASSET)
+          const [rnBalWei, oChain, boundOracle, boundVault] = await Promise.all([
+            lasnaRead.getBalance(guardAddr),
+            guardC.originChainId(),
+            guardC.priceOracle(),
+            guardC.protectedVault()
           ]);
           reactiveBox.textContent = JSON.stringify({
-            assetWatchers: Number(watchers),
-            syncedEnabled: wg.enabled,
-            stopLossUSD: (Number(wg.stopLossPriceE8) / 1e8).toFixed(2),
-            lastTriggeredOriginBlock: Number(wg.lastTriggeredBlock)
+            rnContractBalanceLReact: ethers.formatEther(rnBalWei),
+            originChainId: Number(oChain),
+            boundPriceOracle: boundOracle,
+            boundProtectedVault: boundVault,
+            reactVmExplorer: `https://lasna.reactscan.net/address/${guardAddr}`
           }, null, 2);
         } else {
           reactiveBox.textContent = "Reactive Lasna RPC is live. Deploy ReactiveVaultGuard to 5318007 and paste its address to inspect synced ReactVM watchers.";
