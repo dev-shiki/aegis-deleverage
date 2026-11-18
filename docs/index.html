@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ReactiveVaultGuard: Cross-Chain Stop-Loss &amp; Deleverage Console</title>
+  <title>AegisDeleverage: Reactive Omni Stop-Loss &amp; Deleverage Vault</title>
   <style>
     :root {
       --bg: #FAF9F6;
@@ -325,8 +325,8 @@
   <div class="shell">
     <header class="topbar">
       <div class="brand">
-        <h1>ReactiveVaultGuard</h1>
-        <p>Automated Cross-Chain Stop-Loss &amp; Deleverage Guard (Base Sepolia 84532 / Reactive Lasna 5318007)</p>
+        <h1>AegisDeleverage</h1>
+        <p>Automated Cross-Chain Stop-Loss &amp; Deleverage Vault (Base Sepolia 84532 / Reactive Omni Lasna 5318007)</p>
       </div>
       <div class="wallet-bar">
         <span id="walletPill" class="badge">Wallet: Disconnected</span>
@@ -373,32 +373,33 @@
         <h2>Contract Addresses</h2>
         <div class="field" style="margin-top: 12px;">
           <label for="oracleAddr">PriceOracle (Base Sepolia 84532)</label>
-          <input id="oracleAddr" class="mono" value="0x2AfEEC24f2a810D726DB47CAEa3A76AaF6A7D50E" placeholder="0x... (pending deployment)" />
+          <input id="oracleAddr" class="mono" value="0x06Df840a5aE025A8d86Dde667E02E7cff0cFf4c4" placeholder="0x... (pending Omni deployment)" />
         </div>
         <div class="field">
           <label for="vaultAddr">ProtectedVault (Base Sepolia 84532)</label>
-          <input id="vaultAddr" class="mono" value="0x5dee49560FcE0a1BC26EBb6591F58B7A2aF313F1" placeholder="0x... (pending deployment)" />
+          <input id="vaultAddr" class="mono" value="0x8AeD78c80024C2C5d8E90F346B87298174CeBcce" placeholder="0x... (pending Omni deployment)" />
         </div>
         <div class="field">
-          <label for="guardAddr">ReactiveVaultGuard (Lasna 5318007)</label>
-          <input id="guardAddr" class="mono" value="0x2AfEEC24f2a810D726DB47CAEa3A76AaF6A7D50E" placeholder="0x... (pending deployment)" />
+          <label for="guardAddr">AegisDeleverage (Reactive Lasna 5318007)</label>
+          <input id="guardAddr" class="mono" value="0x5dee49560FcE0a1BC26EBb6591F58B7A2aF313F1" placeholder="0x... (pending Omni deployment)" />
         </div>
         <div class="field">
           <label for="inspectUser">Inspected User Address</label>
           <input id="inspectUser" class="mono" value="0x8e62f1cffcc52D4C3B18fD61f8917cB33BA0D5E6" />
         </div>
         <div class="field" style="margin-bottom: 0;">
-          <label>Callback Proxy &amp; lREACT Faucet</label>
-          <div class="state-box mono">Proxy: 0xa6eA...A5a6
-Faucet: 0x2afa...5967</div>
+          <label>Omni Callback Proxy &amp; System</label>
+          <div class="state-box mono">Proxy : 0x476F...3585
+System: 0x8888...8888</div>
         </div>
       </aside>
     </section>
 
     <section class="panel" aria-label="Vault Operations">
-      <div class="tabs" role="tablist" aria-label="ReactiveVaultGuard Controls">
+      <div class="tabs" role="tablist" aria-label="AegisDeleverage Controls">
         <button class="tab-btn" role="tab" id="tab-vault" aria-selected="true" aria-controls="panel-vault" type="button">Vault &amp; Guard Config</button>
         <button class="tab-btn" role="tab" id="tab-oracle" aria-selected="false" aria-controls="panel-oracle" type="button">Oracle Price Trigger</button>
+        <button class="tab-btn" role="tab" id="tab-latency" aria-selected="false" aria-controls="panel-latency" type="button">Omni Loop Proof &amp; Latency</button>
       </div>
 
       <div id="panel-vault" class="tab-panel" role="tabpanel" aria-labelledby="tab-vault">
@@ -463,10 +464,18 @@ Faucet: 0x2afa...5967</div>
           <div>
             <h3>Cross-Chain Execution Flow</h3>
             <div class="state-box">1. PriceOracle emits PriceUpdated on Base Sepolia (84532).
-2. ReactiveVaultGuard ReactVM matches watcher stop-loss.
-3. Reactive Network relays executeProtection(rvmId, user, priceE8) via Base Sepolia Callback Proxy.</div>
+2. AegisDeleverage react() calls SYSTEM.requestCallbackV_1_0 on Lasna (5318007).
+3. Reactive Omni Callback Proxy (0x476F...3585) calls executeProtection on Base Sepolia.</div>
           </div>
         </div>
+      </div>
+
+      <div id="panel-latency" class="tab-panel" role="tabpanel" aria-labelledby="tab-latency" hidden>
+        <h3>Verified End-to-End Omni Latency Benchmark (3 Live Runs)</h3>
+        <div id="latencyTableBox" class="state-box mono" style="overflow-x:auto;">Run #1 ($1,900) | Origin #60528253 -&gt; Callback #60528263 | +10 blocks | 2s | 0x2b360778...38a44037
+Run #2 ($1,750) | Origin #60529380 -&gt; Callback #60529392 | +12 blocks | 3s | 0x2f52e0d7...443a83aa
+Run #3 ($1,600) | Origin #60529442 -&gt; Callback #60529455 | +13 blocks | 2s | 0x057ce08b...030ac922
+Average         | 11.67 blocks (Base Sepolia 200ms) | 2.33 seconds end-to-end</div>
       </div>
 
       <div id="log" class="console-log" role="status" aria-live="polite">Ready. Telemetry runs read-only against sepolia.base.org and lasna-rpc.rnk.dev.</div>
@@ -497,6 +506,9 @@ Faucet: 0x2afa...5967</div>
     ];
     const VAULT_ABI = [
       "function paused() view returns (bool)",
+      "function callbackSender() view returns (address)",
+      "function callbackGasReserveWei() view returns (uint256)",
+      "function totalUserCollateralWei() view returns (uint256)",
       "function positions(address) view returns (address asset, uint256 collateralWei, uint256 debtUsdE8)",
       "function guards(address) view returns (address asset, uint256 stopLossPriceE8, uint256 minHealthFactorBps, uint256 repayBps, uint64 cooldownSeconds, uint64 lastTriggeredAt, uint64 dayIndex, uint16 dailyCount, bool enabled)",
       "function getHealthFactorBps(address user, uint256 priceE8) view returns (uint256)",
@@ -508,7 +520,8 @@ Faucet: 0x2afa...5967</div>
     const GUARD_ABI = [
       "function originChainId() view returns (uint256)",
       "function priceOracle() view returns (address)",
-      "function protectedVault() view returns (address)"
+      "function protectedVault() view returns (address)",
+      "function triggersDispatched() view returns (uint256)"
     ];
 
     const baseRead = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC);
@@ -573,8 +586,10 @@ Faucet: 0x2afa...5967</div>
 
         if (ethers.isAddress(vaultAddr) && ethers.isAddress(inspectUser)) {
           const vault = new ethers.Contract(vaultAddr, VAULT_ABI, baseRead);
-          const [paused, pos, guard] = await Promise.all([
+          const [paused, cbSender, reserveWei, pos, guard] = await Promise.all([
             vault.paused(),
+            vault.callbackSender(),
+            vault.callbackGasReserveWei(),
             vault.positions(inspectUser),
             vault.guards(inspectUser)
           ]);
@@ -586,6 +601,8 @@ Faucet: 0x2afa...5967</div>
           document.getElementById("mVaultHf").textContent = hfText;
           vaultBox.textContent = JSON.stringify({
             paused,
+            authorizedCallbackSender: cbSender,
+            callbackGasReserveETH: ethers.formatEther(reserveWei),
             collateralETH: ethers.formatEther(pos.collateralWei),
             debtUSD: (Number(pos.debtUsdE8) / 1e8).toFixed(2),
             guardEnabled: guard.enabled,
@@ -600,21 +617,23 @@ Faucet: 0x2afa...5967</div>
 
         if (ethers.isAddress(guardAddr) && ethers.isAddress(inspectUser)) {
           const guardC = new ethers.Contract(guardAddr, GUARD_ABI, lasnaRead);
-          const [rnBalWei, oChain, boundOracle, boundVault] = await Promise.all([
+          const [rnBalWei, oChain, boundOracle, boundVault, dispatched] = await Promise.all([
             lasnaRead.getBalance(guardAddr),
             guardC.originChainId(),
             guardC.priceOracle(),
-            guardC.protectedVault()
+            guardC.protectedVault(),
+            guardC.triggersDispatched()
           ]);
           reactiveBox.textContent = JSON.stringify({
             rnContractBalanceLReact: ethers.formatEther(rnBalWei),
             originChainId: Number(oChain),
+            triggersDispatched: Number(dispatched),
             boundPriceOracle: boundOracle,
             boundProtectedVault: boundVault,
             reactVmExplorer: `https://lasna.reactscan.net/address/${guardAddr}`
           }, null, 2);
         } else {
-          reactiveBox.textContent = "Reactive Lasna RPC is live. Deploy ReactiveVaultGuard to 5318007 and paste its address to inspect synced ReactVM watchers.";
+          reactiveBox.textContent = "Reactive Lasna RPC is live. Deploy AegisDeleverage to 5318007 and paste its address to inspect synced Omni watchers.";
         }
       } catch (e) {
         errEl.textContent = `RPC read error: ${e.message}`;

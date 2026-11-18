@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.29;
 
-import "reactive-lib/abstract-base/AbstractReactive.sol";
+import { AbstractReactive } from "reactive-lib/base/AbstractReactive.sol";
+import { ISystemContract } from "reactive-lib/interfaces/ISystemContract.sol";
 
-/// @title ReactiveVaultGuard
-/// @notice Reactive Smart Contract deployed on Reactive Lasna (5318007) monitoring Base Sepolia events.
-contract ReactiveVaultGuard is AbstractReactive {
+/// @title AegisDeleverage
+/// @notice Reactive Omni Smart Contract on Reactive Lasna (5318007) monitoring Base Sepolia oracle & guard events.
+contract AegisDeleverage is AbstractReactive {
     uint64 public constant CALLBACK_GAS_LIMIT = 500_000;
 
     uint256 public constant PRICE_UPDATED_TOPIC_0 =
@@ -26,6 +27,7 @@ contract ReactiveVaultGuard is AbstractReactive {
     uint256 public immutable destinationChainId;
     address public immutable priceOracle;
     address public immutable protectedVault;
+    uint256 public triggersDispatched;
 
     mapping(address => WatchedGuard) public watchedGuards;
     mapping(address => address[]) private assetWatchers;
@@ -38,7 +40,12 @@ contract ReactiveVaultGuard is AbstractReactive {
         uint256 minHealthFactorBps,
         bool enabled
     );
-    event ProtectionDispatched(address indexed user, address indexed asset, uint256 triggerPriceE8);
+    event ProtectionDispatched(
+        address indexed user,
+        address indexed asset,
+        uint256 triggerPriceE8,
+        uint256 originBlock
+    );
 
     error Unauthorized();
 
@@ -59,45 +66,42 @@ contract ReactiveVaultGuard is AbstractReactive {
         priceOracle = _priceOracle;
         protectedVault = _protectedVault;
 
-        // Subscriptions only execute on the top-level Reactive Network, never inside ReactVM.
-        if (!vm) {
-            service.subscribe(
-                _originChainId,
-                _priceOracle,
-                PRICE_UPDATED_TOPIC_0,
-                REACTIVE_IGNORE,
-                REACTIVE_IGNORE,
-                REACTIVE_IGNORE
-            );
-            service.subscribe(
-                _originChainId,
-                _protectedVault,
-                GUARD_CONFIGURED_TOPIC_0,
-                REACTIVE_IGNORE,
-                REACTIVE_IGNORE,
-                REACTIVE_IGNORE
-            );
-        }
+        SYSTEM.subscribe(
+            _originChainId,
+            _priceOracle,
+            PRICE_UPDATED_TOPIC_0,
+            REACTIVE_IGNORE,
+            REACTIVE_IGNORE,
+            REACTIVE_IGNORE
+        );
+        SYSTEM.subscribe(
+            _originChainId,
+            _protectedVault,
+            GUARD_CONFIGURED_TOPIC_0,
+            REACTIVE_IGNORE,
+            REACTIVE_IGNORE,
+            REACTIVE_IGNORE
+        );
     }
 
-    function react(LogRecord calldata log) external vmOnly {
-        if (log.chain_id != originChainId) return;
+    function react(LogRecord calldata log_) external override onlySystem {
+        if (log_.chainId != originChainId) return;
 
-        if (log._contract == protectedVault && log.topic_0 == GUARD_CONFIGURED_TOPIC_0) {
-            _handleGuardConfigured(log);
+        if (log_.contractAddress == protectedVault && log_.topic0 == GUARD_CONFIGURED_TOPIC_0) {
+            _handleGuardConfigured(log_);
             return;
         }
 
-        if (log._contract == priceOracle && log.topic_0 == PRICE_UPDATED_TOPIC_0) {
-            _handlePriceUpdated(log);
+        if (log_.contractAddress == priceOracle && log_.topic0 == PRICE_UPDATED_TOPIC_0) {
+            _handlePriceUpdated(log_);
         }
     }
 
-    function _handleGuardConfigured(LogRecord calldata log) internal {
-        address user = address(uint160(log.topic_1));
-        address asset = address(uint160(log.topic_2));
+    function _handleGuardConfigured(LogRecord calldata log_) internal {
+        address user = address(uint160(log_.topic1));
+        address asset = address(uint160(log_.topic2));
         (uint256 stopLossPriceE8, uint256 minHealthFactorBps, bool enabled) =
-            abi.decode(log.data, (uint256, uint256, bool));
+            abi.decode(log_.data, (uint256, uint256, bool));
 
         watchedGuards[user] = WatchedGuard({
             asset: asset,
@@ -115,9 +119,9 @@ contract ReactiveVaultGuard is AbstractReactive {
         emit GuardSynced(user, asset, stopLossPriceE8, minHealthFactorBps, enabled);
     }
 
-    function _handlePriceUpdated(LogRecord calldata log) internal {
-        address asset = address(uint160(log.topic_1));
-        (, uint256 newPriceE8,) = abi.decode(log.data, (uint256, uint256, uint256));
+    function _handlePriceUpdated(LogRecord calldata log_) internal {
+        address asset = address(uint160(log_.topic1));
+        (, uint256 newPriceE8,) = abi.decode(log_.data, (uint256, uint256, uint256));
 
         address[] storage watchers = assetWatchers[asset];
         uint256 len = watchers.length;
@@ -126,19 +130,28 @@ contract ReactiveVaultGuard is AbstractReactive {
             WatchedGuard storage guard = watchedGuards[user];
             if (!guard.enabled || guard.asset != asset) continue;
             if (newPriceE8 > guard.stopLossPriceE8) continue;
-            if (log.block_number <= guard.lastTriggeredBlock) continue;
+            if (log_.blockNumber <= guard.lastTriggeredBlock) continue;
 
-            guard.lastTriggeredBlock = log.block_number;
+            guard.lastTriggeredBlock = log_.blockNumber;
+            ++triggersDispatched;
 
-            // First argument (address(0)) is overwritten by Reactive Network with deployer RVM ID.
+            // Reactive Omni injects this reactive contract address into arg0 on the destination chain.
             bytes memory payload = abi.encodeWithSignature(
-                "executeProtection(address,address,uint256)",
+                "executeProtection(address,address,uint256,uint256)",
                 address(0),
                 user,
-                newPriceE8
+                newPriceE8,
+                log_.blockNumber
             );
-            emit Callback(destinationChainId, protectedVault, CALLBACK_GAS_LIMIT, payload);
-            emit ProtectionDispatched(user, asset, newPriceE8);
+            SYSTEM.requestCallbackV_1_0(
+                ISystemContract.CallbackConfiguration_V_1_0({
+                    chainId: destinationChainId,
+                    recipient: protectedVault,
+                    gasLimit: CALLBACK_GAS_LIMIT,
+                    payload: payload
+                })
+            );
+            emit ProtectionDispatched(user, asset, newPriceE8, log_.blockNumber);
         }
     }
 
@@ -146,8 +159,8 @@ contract ReactiveVaultGuard is AbstractReactive {
         return assetWatchers[asset].length;
     }
 
-    function pauseSubscriptions() external rnOnly onlyOwner {
-        service.unsubscribe(
+    function pauseSubscriptions() external onlyOwner {
+        SYSTEM.unsubscribe(
             originChainId,
             priceOracle,
             PRICE_UPDATED_TOPIC_0,
@@ -155,7 +168,7 @@ contract ReactiveVaultGuard is AbstractReactive {
             REACTIVE_IGNORE,
             REACTIVE_IGNORE
         );
-        service.unsubscribe(
+        SYSTEM.unsubscribe(
             originChainId,
             protectedVault,
             GUARD_CONFIGURED_TOPIC_0,

@@ -1,0 +1,45 @@
+﻿{
+    "priceOracle":  "0x06df840a5ae025a8d86dde667e02e7cff0cff4c4",
+    "protectedVault":  "0x8aed78c80024c2c5d8e90f346b87298174cebcce",
+    "aegisDeleverage":  "0x5dee49560fce0a1bc26ebb6591f58b7a2af313f1",
+    "omniCallbackProxy":  "0x476F44b11F5C942c58f4c8E3d0300E5710743585",
+    "deployer":  "0x8e62f1cffcc52D4C3B18fD61f8917cB33BA0D5E6",
+    "runs":  [
+                 {
+                     "run":  1,
+                     "priceUsd":  1900,
+                     "originTx":  "0xa7f55f1a5548445c0e6323cfb9d1948ff7039bece41f850c85b34218049e8c93",
+                     "originBlock":  60528253,
+                     "originTimestamp":  1795027519,
+                     "callbackTx":  "0x2b36077887ec9a78282f8796860f8f852dc4b12d11682041ec2b806838a44037",
+                     "callbackBlock":  60528263,
+                     "callbackTimestamp":  1795027521,
+                     "latencyBlocks":  10,
+                     "latencySeconds":  2
+                 },
+                 {
+                     "run":  2,
+                     "priceUsd":  1750,
+                     "originTx":  "0xae503812ea7c0056898a55a6177128e53a4391bc2efa77a041068a76861cba4f",
+                     "originBlock":  60529380,
+                     "originTimestamp":  1795027744,
+                     "callbackTx":  "0x2f52e0d754e79003d46ccd76a49026bef1a0394f2007fafe09cb779c443a83aa",
+                     "callbackBlock":  60529392,
+                     "callbackTimestamp":  1795027747,
+                     "latencyBlocks":  12,
+                     "latencySeconds":  3
+                 },
+                 {
+                     "run":  3,
+                     "priceUsd":  1600,
+                     "originTx":  "0x543ffffee8683bee3bc93166a8c3d997bac4812e8b115c2c62ece31d74838fa9",
+                     "originBlock":  60529442,
+                     "originTimestamp":  1795027757,
+                     "callbackTx":  "0x057ce08b8321f278715099788fc3f19598544c646ff91f03f66cca21030ac922",
+                     "callbackBlock":  60529455,
+                     "callbackTimestamp":  1795027759,
+                     "latencyBlocks":  13,
+                     "latencySeconds":  2
+                 }
+             ]
+}

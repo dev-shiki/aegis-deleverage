@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.29;
 
-import "reactive-lib/abstract-base/AbstractCallback.sol";
+import { AbstractCallback } from "reactive-lib/base/AbstractCallback.sol";
+import { IPayable } from "reactive-lib/interfaces/IPayable.sol";
 import "./PriceOracle.sol";
 
 /// @title ProtectedVault
-/// @notice Destination-chain collateral vault on Base Sepolia protected by Reactive Network callbacks.
+/// @notice Destination-chain collateral vault protected by Reactive Omni cross-chain callbacks.
 contract ProtectedVault is AbstractCallback {
     uint256 public constant BPS_DENOMINATOR = 10_000;
     uint256 public constant MIN_BORROW_HF_BPS = 12_000; // 120% collateralization
     uint256 public constant MAX_REPAY_BPS = 5_000; // Cap single deleverage at 50%
     uint16 public constant MAX_DAILY_PROTECTIONS = 5;
-    uint64 public constant MIN_COOLDOWN_SECONDS = 30;
 
     struct Position {
         address asset;
@@ -33,7 +33,10 @@ contract ProtectedVault is AbstractCallback {
 
     address public owner;
     PriceOracle public immutable priceOracle;
+    address public callbackSender;
+    uint256 public totalUserCollateralWei;
     bool public paused;
+    uint256 private _lock = 1;
 
     mapping(address => Position) public positions;
     mapping(address => GuardConfig) public guards;
@@ -55,13 +58,16 @@ contract ProtectedVault is AbstractCallback {
         uint256 triggerPriceE8,
         uint256 debtReducedUsdE8,
         uint256 collateralUsedWei,
-        uint256 newHealthFactorBps
+        uint256 newHealthFactorBps,
+        uint256 originBlock
     );
     event PausedSet(bool paused);
-    event RvmIdUpdated(address indexed oldRvmId, address indexed newRvmId);
+    event CallbackSenderUpdated(address indexed oldSender, address indexed newSender);
+    event CallbackReserveFunded(address indexed sender, uint256 amountWei);
 
     error Unauthorized();
     error ContractPaused();
+    error Reentrancy();
     error ZeroAmount();
     error InvalidAsset();
     error InsufficientCollateral();
@@ -71,7 +77,6 @@ contract ProtectedVault is AbstractCallback {
     error CooldownActive();
     error DailyCapReached();
     error TriggerConditionNotMet();
-    error TransferFailed();
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert Unauthorized();
@@ -83,7 +88,17 @@ contract ProtectedVault is AbstractCallback {
         _;
     }
 
-    constructor(address _callbackProxy, address _priceOracle) AbstractCallback(_callbackProxy) payable {
+    modifier nonReentrant() {
+        if (_lock != 1) revert Reentrancy();
+        _lock = 2;
+        _;
+        _lock = 1;
+    }
+
+    constructor(address _callbackProxy, address _priceOracle)
+        AbstractCallback(IPayable(payable(_callbackProxy)), address(0))
+        payable
+    {
         owner = msg.sender;
         priceOracle = PriceOracle(_priceOracle);
     }
@@ -93,10 +108,21 @@ contract ProtectedVault is AbstractCallback {
         emit PausedSet(_paused);
     }
 
-    function setRvmId(address _rvmId) external onlyOwner {
-        address old = rvm_id;
-        rvm_id = _rvmId;
-        emit RvmIdUpdated(old, _rvmId);
+    function setCallbackSender(address _callbackSender) external onlyOwner {
+        if (_callbackSender == address(0)) revert Unauthorized();
+        address old = callbackSender;
+        callbackSender = _callbackSender;
+        emit CallbackSenderUpdated(old, _callbackSender);
+    }
+
+    function fundCallbackReserve() external payable {
+        if (msg.value == 0) revert ZeroAmount();
+        emit CallbackReserveFunded(msg.sender, msg.value);
+    }
+
+    function callbackGasReserveWei() external view returns (uint256) {
+        if (address(this).balance <= totalUserCollateralWei) return 0;
+        return address(this).balance - totalUserCollateralWei;
     }
 
     function deposit(address asset) external payable whenNotPaused {
@@ -105,6 +131,7 @@ contract ProtectedVault is AbstractCallback {
         if (pos.collateralWei > 0 && pos.asset != asset) revert InvalidAsset();
         pos.asset = asset;
         pos.collateralWei += msg.value;
+        totalUserCollateralWei += msg.value;
         emit Deposited(msg.sender, asset, msg.value);
     }
 
@@ -131,12 +158,13 @@ contract ProtectedVault is AbstractCallback {
         emit Repaid(msg.sender, reduction, pos.debtUsdE8);
     }
 
-    function withdraw(uint256 amountWei) external whenNotPaused {
+    function withdraw(uint256 amountWei) external whenNotPaused nonReentrant {
         if (amountWei == 0) revert ZeroAmount();
         Position storage pos = positions[msg.sender];
         if (pos.collateralWei < amountWei) revert InsufficientCollateral();
 
         pos.collateralWei -= amountWei;
+        totalUserCollateralWei -= amountWei;
         if (pos.debtUsdE8 > 0) {
             uint256 priceE8 = priceOracle.pricesE8(pos.asset);
             if (getHealthFactorBps(msg.sender, priceE8) < MIN_BORROW_HF_BPS) {
@@ -158,7 +186,6 @@ contract ProtectedVault is AbstractCallback {
         bool enabled
     ) external whenNotPaused {
         if (repayBps == 0 || repayBps > MAX_REPAY_BPS) revert InvalidGuardConfig();
-        if (cooldownSeconds < MIN_COOLDOWN_SECONDS) revert InvalidGuardConfig();
 
         GuardConfig storage guard = guards[msg.sender];
         guard.asset = asset;
@@ -171,13 +198,18 @@ contract ProtectedVault is AbstractCallback {
         emit GuardConfigured(msg.sender, asset, stopLossPriceE8, minHealthFactorBps, enabled);
     }
 
-    /// @notice Invoked by the Base Sepolia Callback Proxy when ReactiveVaultGuard emits a Callback.
-    /// @dev Reactive Network overwrites the first argument with the deployer's RVM ID.
+    /// @notice Invoked by the Reactive Omni Callback Proxy when AegisDeleverage requests a callback.
+    /// @dev Reactive Omni injects the calling reactive contract address into `callbackSender_`.
     function executeProtection(
-        address rvmId,
+        address callbackSender_,
         address user,
-        uint256 triggerPriceE8
-    ) external authorizedSenderOnly rvmIdOnly(rvmId) whenNotPaused {
+        uint256 triggerPriceE8,
+        uint256 originBlock
+    ) external onlyServiceProvider whenNotPaused nonReentrant {
+        if (callbackSender == address(0) || callbackSender_ != callbackSender) {
+            revert CallbackNotAuthorized(callbackSender_, callbackSender);
+        }
+
         GuardConfig storage guard = guards[user];
         if (!guard.enabled) revert GuardNotEnabled();
 
@@ -200,10 +232,12 @@ contract ProtectedVault is AbstractCallback {
             revert TriggerConditionNotMet();
         }
 
-        uint256 hfBefore = getHealthFactorBps(user, triggerPriceE8);
-        bool priceTriggered = triggerPriceE8 <= guard.stopLossPriceE8;
-        bool hfTriggered = hfBefore < guard.minHealthFactorBps;
-        if (!priceTriggered && !hfTriggered) revert TriggerConditionNotMet();
+        if (
+            triggerPriceE8 > guard.stopLossPriceE8 &&
+            getHealthFactorBps(user, triggerPriceE8) >= guard.minHealthFactorBps
+        ) {
+            revert TriggerConditionNotMet();
+        }
 
         uint256 debtReducedUsdE8 = (pos.debtUsdE8 * guard.repayBps) / BPS_DENOMINATOR;
         if (debtReducedUsdE8 == 0) debtReducedUsdE8 = pos.debtUsdE8;
@@ -215,19 +249,20 @@ contract ProtectedVault is AbstractCallback {
         }
 
         pos.collateralWei -= collateralNeededWei;
+        totalUserCollateralWei -= collateralNeededWei;
         pos.debtUsdE8 -= debtReducedUsdE8;
 
         guard.lastTriggeredAt = uint64(block.timestamp);
         guard.dailyCount += 1;
 
-        uint256 hfAfter = getHealthFactorBps(user, triggerPriceE8);
         emit ProtectionExecuted(
             user,
             pos.asset,
             triggerPriceE8,
             debtReducedUsdE8,
             collateralNeededWei,
-            hfAfter
+            getHealthFactorBps(user, triggerPriceE8),
+            originBlock
         );
     }
 

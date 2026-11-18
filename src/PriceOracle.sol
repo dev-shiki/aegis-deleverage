@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.29;
 
 /// @title PriceOracle
-/// @notice Origin-chain price feed on Base Sepolia emitting PriceUpdated events consumed by ReactiveVaultGuard.
+/// @notice Origin-chain price feed on Base Sepolia emitting PriceUpdated events consumed by AegisDeleverage.
 contract PriceOracle {
     address public owner;
     mapping(address => bool) public authorizedUpdaters;

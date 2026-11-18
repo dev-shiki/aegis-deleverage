@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CLI helper for ReactiveVaultGuard on Base Sepolia (84532) and Reactive Lasna (5318007)."""
+"""CLI helper for AegisDeleverage on Base Sepolia (84532) and Reactive Lasna (5318007)."""
 
 import argparse
 import json
@@ -11,7 +11,8 @@ import urllib.request
 BASE_SEPOLIA_RPC = os.getenv("BASE_SEPOLIA_RPC", "https://sepolia.base.org")
 REACTIVE_LASNA_RPC = os.getenv("REACTIVE_LASNA_RPC", "https://lasna-rpc.rnk.dev/")
 BASE_SEPOLIA_FAUCET = "0x2afaFD298b23b62760711756088F75B7409f5967"
-BASE_SEPOLIA_CALLBACK_PROXY = "0xa6eA49Ed671B8a4dfCDd34E36b7a75Ac79B8A5a6"
+BASE_SEPOLIA_OMNI_CALLBACK_PROXY = "0x476F44b11F5C942c58f4c8E3d0300E5710743585"
+OMNI_SYSTEM_CONTRACT = "0x8888888888888888888888888888888888888888"
 ETH_ASSET = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 
 
@@ -20,7 +21,7 @@ def rpc_call(url: str, method: str, params: list) -> str:
     req = urllib.request.Request(
         url,
         data=payload,
-        headers={"Content-Type": "application/json", "User-Agent": "ReactiveVaultGuard-CLI/1.0"},
+        headers={"Content-Type": "application/json", "User-Agent": "AegisDeleverage-CLI/2.0"},
     )
     with urllib.request.urlopen(req, timeout=15) as resp:
         data = json.loads(resp.read().decode())
@@ -73,7 +74,7 @@ def cmd_trigger_crash(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="ReactiveVaultGuard CLI")
+    parser = argparse.ArgumentParser(description="AegisDeleverage CLI (Reactive Omni)")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_status = sub.add_parser("status", help="Check RPC health and optional wallet balances")
@@ -85,7 +86,7 @@ def main() -> None:
     p_faucet.add_argument("--value", default="0.05ether", help="Base Sepolia ETH amount (max 5ether)")
     p_faucet.set_defaults(func=cmd_faucet)
 
-    p_crash = sub.add_parser("trigger-crash", help="Emit PriceUpdated on Base Sepolia to trigger Reactive callback")
+    p_crash = sub.add_parser("trigger-crash", help="Emit PriceUpdated on Base Sepolia to trigger Reactive Omni callback")
     p_crash.add_argument("--price-e8", type=int, default=180000000000, help="New price in 1e8 USD (default $1800)")
     p_crash.set_defaults(func=cmd_trigger_crash)
 

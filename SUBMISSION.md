@@ -1,85 +1,50 @@
-# ReactiveVaultGuard: DoraHacks Reactive Omni Buildathon Submission
+# AegisDeleverage: DoraHacks Reactive Omni Buildathon Submission
 
-Automated Cross-Chain Stop-Loss and Deleverage Guard built with Reactive Smart Contracts (Reactive Lasna `5318007`) protecting collateral vaults on Base Sepolia (`84532`).
+Autonomous cross-chain stop-loss and cascading deleverage vault built on **`Reactive-Network/reactive-lib-omni`** for **Track 1: Every Second Counts**.
 
-- **Live Web Console:** https://dev-shiki.github.io/reactive-vault-guard/
-- **Repository:** https://github.com/dev-shiki/reactive-vault-guard
-- **Demo Video:** https://youtu.be/qYGa-5rfmoI
+- **Live Web Console:** https://dev-shiki.github.io/aegis-deleverage/
+- **Repository:** https://github.com/dev-shiki/aegis-deleverage
+- **Demo Video:** *(pending final recording)*
 
 ---
 
 ## Problem
+DeFi borrowers with leveraged collateral positions depend on centralized keeper bots or off-chain cron jobs to prevent liquidation during sudden price drops. Keepers stall, skip small positions, and give users zero on-chain verification that their stop-loss threshold is actively monitored.
 
-DeFi borrowers with leveraged collateral positions depend on centralized keeper bots or off-chain cron jobs to prevent liquidation during sudden price drops. When keepers stall, go offline, or miss a fast market move, borrowers suffer full liquidation penalties instead of a partial, controlled debt reduction. Users also cannot easily inspect or verify whether a third-party keeper is actively monitoring their specific stop-loss threshold.
+## Solution
+AegisDeleverage replaces off-chain keepers with an autonomous cross-chain loop between **Base Sepolia (`84532`)** and **Reactive Lasna (`5318007`)** using **`reactive-lib-omni`**:
+1. **Origin (`src/PriceOracle.sol` on Base Sepolia `84532`):** Emits `PriceUpdated` whenever asset prices move.
+2. **Reactive Omni Brain (`src/AegisDeleverage.sol` on Reactive Lasna `5318007`):** Subscribes to `GuardConfigured` and `PriceUpdated` via `SYSTEM` (`0x8888...8888`) and dispatches callbacks via `SYSTEM.requestCallbackV_1_0` under `onlySystem`.
+3. **Destination (`src/ProtectedVault.sol` on Base Sepolia `84532`):** Bound to the Base Sepolia Omni Callback Proxy (`0x476F44b11F5C942c58f4c8E3d0300E5710743585`). Verifies `onlyServiceProvider` + `callbackSender`, enforces `nonReentrant`, configurable cooldowns, `50%` max repay/step, `5/day` cap, and pause circuit breaker, then atomically deleverages the user's position.
 
-## Architecture
+## Deployed Contract Addresses
 
-ReactiveVaultGuard replaces off-chain keepers with an autonomous three-contract loop across Base Sepolia (`84532`) and Reactive Lasna (`5318007`):
+| Component | Network | Address |
+| --- | --- | --- |
+| `PriceOracle` | Base Sepolia (`84532`) | [`0x06Df840a5aE025A8d86Dde667E02E7cff0cFf4c4`](https://sepolia.basescan.org/address/0x06Df840a5aE025A8d86Dde667E02E7cff0cFf4c4) |
+| `ProtectedVault` | Base Sepolia (`84532`) | [`0x8AeD78c80024C2C5d8E90F346B87298174CeBcce`](https://sepolia.basescan.org/address/0x8AeD78c80024C2C5d8E90F346B87298174CeBcce) |
+| `AegisDeleverage` | Reactive Lasna (`5318007`) | [`0x5dee49560FcE0a1BC26EBb6591F58B7A2aF313F1`](https://lasna.reactscan.net/address/0x5dee49560FcE0a1BC26EBb6591F58B7A2aF313F1) |
 
-1. **Origin (`src/PriceOracle.sol` on Base Sepolia `84532`)**
-   - Stores USD prices scaled to `1e8` (`pricesE8`) and emits `PriceUpdated(address indexed asset, uint256 oldPriceE8, uint256 newPriceE8, uint256 timestamp)` whenever `setPrice(address asset, uint256 newPriceE8)` runs.
-2. **Reactive Brain (`src/ReactiveVaultGuard.sol` on Reactive Lasna `5318007`)**
-   - Inherits `AbstractReactive` and subscribes in its constructor (`if (!vm)`) via `SERVICE_ADDR` (`0x0000000000000000000000000000000000fffFfF`) to two Base Sepolia events: `GuardConfigured` from `ProtectedVault` and `PriceUpdated` from `PriceOracle`.
-   - Syncs per-user guard thresholds (`asset`, `stopLossPriceE8`, `minHealthFactorBps`, `enabled`) into ReactVM storage via `react(LogRecord calldata log)`.
-   - On `PriceUpdated`, checks registered watchers for that asset (`assetWatchers[asset]`). When `guard.enabled` is true, `newPriceE8 <= guard.stopLossPriceE8`, and `log.block_number > guard.lastTriggeredBlock` (preventing same-block replay), it emits `Callback(destinationChainId, protectedVault, CALLBACK_GAS_LIMIT, payload)` with `CALLBACK_GAS_LIMIT = 500_000` calling `executeProtection(address,address,uint256)` and emits `ProtectionDispatched(user, asset, newPriceE8)`.
-3. **Destination (`src/ProtectedVault.sol` on Base Sepolia `84532`)**
-   - Inherits `AbstractCallback` bound to the Base Sepolia Callback Proxy (`0xa6eA49Ed671B8a4dfCDd34E36b7a75Ac79B8A5a6`).
-   - Users deposit native ETH (`deposit`), borrow USD debt up to `MIN_BORROW_HF_BPS` (`12000` bps / 120% collateralization), and configure personal parameters via `configureGuard`.
-   - `executeProtection(address rvmId, address user, uint256 triggerPriceE8)` enforces `authorizedSenderOnly`, `rvmIdOnly(rvmId)`, `whenNotPaused`, `MIN_COOLDOWN_SECONDS` (`>= 30` seconds), `MAX_REPAY_BPS` (`5000` bps / 50% cap per execution), and `MAX_DAILY_PROTECTIONS` (`5` executions per day). It reduces debt by `repayBps` and deducts equivalent collateral at `triggerPriceE8`, restoring the user's health factor without external keeper infrastructure.
+## Verified On-Chain Transactions & Measured Loop Latency (`2.33s` avg)
 
-## Buildathon Track Fit
+- **Deploy `AegisDeleverage` (Reactive Lasna `5318007`):** [`0x570e012731792f171341a34139b3ecdeee9ee15fff0c9fa8968c8d64396949f7`](https://lasna.reactscan.net/tx/0x570e012731792f171341a34139b3ecdeee9ee15fff0c9fa8968c8d64396949f7)
+- **Setup (`setCallbackSender`, `deposit`, `borrow $3.00`, `configureGuard`):** [`0x9132b1ecb46b98ef139781f77d5e09ace90c56e98065eba8f8d8b4b431aacac0`](https://sepolia.basescan.org/tx/0x9132b1ecb46b98ef139781f77d5e09ace90c56e98065eba8f8d8b4b431aacac0)
 
-### Track 1: Every Second Counts
-- **Sub-second event-driven reaction:** `ReactiveVaultGuard.react()` evaluates incoming `PriceUpdated` logs immediately upon block ingestion in ReactVM, removing polling latency and off-chain cron intervals.
-- **Same-block deduplication:** Tracks `lastTriggeredBlock` per watcher so duplicate or intra-block price logs never emit redundant callbacks.
-
-### Track 2: Set It and Forget It
-- **One-transaction rule registration:** Users call `ProtectedVault.configureGuard(...)` once on Base Sepolia. `ReactiveVaultGuard` automatically captures the `GuardConfigured` log and maintains the watcher list on Reactive Lasna.
-- **Bounded autonomous execution:** Per-user `repayBps` caps (max 50%), `cooldownSeconds` (>= 30s), daily execution caps (5/day), and an owner-controlled `setPaused(bool)` circuit breaker bound autonomous callbacks within predictable risk limits.
-
-## Verified Testnet Parameters
-
-| Component | Value |
-| --- | --- |
-| Reactive Lasna RPC | `https://lasna-rpc.rnk.dev/` |
-| Reactive Lasna Chain ID | `5318007` (`0x512577`) |
-| Reactive System Contract | `0x0000000000000000000000000000000000fffFfF` |
-| Base Sepolia RPC | `https://sepolia.base.org` |
-| Base Sepolia Chain ID | `84532` (`0x14a34`) |
-| Base Sepolia Callback Proxy | `0xa6eA49Ed671B8a4dfCDd34E36b7a75Ac79B8A5a6` |
-| lREACT Faucet (Base Sepolia) | `0x2afaFD298b23b62760711756088F75B7409f5967` (`1 ETH -> 100 lREACT`, max 5 ETH) |
-| lREACT Faucet (Ethereum Sepolia) | `0x9b9BB25f1A81078C544C829c5EB7822d747Cf434` (`1 ETH -> 100 lREACT`, max 5 ETH) |
+| Run | Trigger Price | Origin `PriceUpdated` Tx (Block) | Callback `ProtectionExecuted` Tx (Block) | Block Delta | Wall Latency |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `$1,900` | [`0xa7f55f1a...049e8c93`](https://sepolia.basescan.org/tx/0xa7f55f1a5548445c0e6323cfb9d1948ff7039bece41f850c85b34218049e8c93) (`#60528253`) | [`0x2b360778...38a44037`](https://sepolia.basescan.org/tx/0x2b36077887ec9a78282f8796860f8f852dc4b12d11682041ec2b806838a44037) (`#60528263`) | `+10` | **`2s`** |
+| 2 | `$1,750` | [`0xae503812...861cba4f`](https://sepolia.basescan.org/tx/0xae503812ea7c0056898a55a6177128e53a4391bc2efa77a041068a76861cba4f) (`#60529380`) | [`0x2f52e0d7...443a83aa`](https://sepolia.basescan.org/tx/0x2f52e0d754e79003d46ccd76a49026bef1a0394f2007fafe09cb779c443a83aa) (`#60529392`) | `+12` | **`3s`** |
+| 3 | `$1,600` | [`0x543ffffe...74838fa9`](https://sepolia.basescan.org/tx/0x543ffffee8683bee3bc93166a8c3d997bac4812e8b115c2c62ece31d74838fa9) (`#60529442`) | [`0x057ce08b...030ac922`](https://sepolia.basescan.org/tx/0x057ce08b8321f278715099788fc3f19598544c646ff91f03f66cca21030ac922) (`#60529455`) | `+13` | **`2s`** |
 
 ## Test Proof
 
-Foundry test suite (`forge test -vvv`) passes `6 passed; 0 failed; 0 skipped`:
-
-```text
-Ran 6 tests for test/ReactiveVaultGuard.t.sol:ReactiveVaultGuardTest
-[PASS] testFuzz_DeleverageConservesDebtAndCollateral(uint96,uint64,uint16,uint64) (runs: 256)
-[PASS] test_CallbackSecurityAndSafetyCaps()
-[PASS] test_EndToEnd_OriginToReactiveToCallback()
-[PASS] test_MultiUserIsolationAndSameBlockDedupe()
-[PASS] test_PausedCircuitBreaker()
-[PASS] test_SubscriptionsRegisteredOnReactiveNetwork()
-```
-
-Additional verified checks:
-- Python CLI syntax check: `python -m py_compile scripts/guard_cli.py` exits `0`.
-- Live Frontend / GitHub Pages Console: `frontend/index.html` and `docs/index.html` are byte-identical and provide read-only telemetry against `https://sepolia.base.org` and `https://lasna-rpc.rnk.dev/` plus MetaMask transaction controls.
-
-## Deployed Contract Addresses & Transaction Hashes
-
-| Item | Network | Value |
-| --- | --- | --- |
-| `PriceOracle` Address | Base Sepolia (`84532`) | [`0x2AfEEC24f2a810D726DB47CAEa3A76AaF6A7D50E`](https://sepolia.basescan.org/address/0x2AfEEC24f2a810D726DB47CAEa3A76AaF6A7D50E) (Deploy Tx: [`0x75e1bae4...a7fad798`](https://sepolia.basescan.org/tx/0x75e1bae43cab67ff29d1b21229607f5f278c001da82fc5cf5abb2796a7fad798)) |
-| `ProtectedVault` Address | Base Sepolia (`84532`) | [`0x5dee49560FcE0a1BC26EBb6591F58B7A2aF313F1`](https://sepolia.basescan.org/address/0x5dee49560FcE0a1BC26EBb6591F58B7A2aF313F1) (Deploy Tx: [`0xad2a191e...2bc10353`](https://sepolia.basescan.org/tx/0xad2a191e1e85f5d482aac292d1edcdcb9f3d4e260df0f985f71f260b2bc10353)) |
-| `ReactiveVaultGuard` Address | Reactive Lasna (`5318007`) | [`0x2AfEEC24f2a810D726DB47CAEa3A76AaF6A7D50E`](https://lasna.reactscan.net/address/0x2AfEEC24f2a810D726DB47CAEa3A76AaF6A7D50E) (Block `8636631`, Deploy & Subscribe Tx: [`0xb86b0d0d...09d0777d`](https://lasna.reactscan.net/tx/0xb86b0d0d96c6e94ce5438132b6e00805256499ad59256107cb8e796009d0777d)) |
-| Oracle `setPrice($2,500)` Baseline Tx | Base Sepolia (`84532`) | [`0x60cb66d8e4acee2c75239f350fb2f4b84ff571a9639d740f05108bee8ff3bdea`](https://sepolia.basescan.org/tx/0x60cb66d8e4acee2c75239f350fb2f4b84ff571a9639d740f05108bee8ff3bdea) |
-| Vault `deposit(0.002 ETH)` Tx | Base Sepolia (`84532`) | [`0x640aa152aa1c9134ed5cc0ee53ed2a1691c5e1cc361e9cd34037c97908966273`](https://sepolia.basescan.org/tx/0x640aa152aa1c9134ed5cc0ee53ed2a1691c5e1cc361e9cd34037c97908966273) |
-| Vault `borrow($3.00 USD)` Tx | Base Sepolia (`84532`) | [`0x46437c90c7533d01843caeaa23feeb033ba0bf300522d14ca0423f50616a93bc`](https://sepolia.basescan.org/tx/0x46437c90c7533d01843caeaa23feeb033ba0bf300522d14ca0423f50616a93bc) |
-| Origin `configureGuard` Tx | Base Sepolia (`84532`) | [`0x158160ddd9d26b191625cbf79fa1db74af691b4a18c7d9c4865d5a8a0385f699`](https://sepolia.basescan.org/tx/0x158160ddd9d26b191625cbf79fa1db74af691b4a18c7d9c4865d5a8a0385f699) |
-| Origin `PriceUpdated` Crash Tx (`$2,500 -> $1,800`) | Base Sepolia (`84532`) | [`0xc3435fcaf38e37af16a7a1df545f8bdc2e93124ecd8670faf4bb9c2815661617`](https://sepolia.basescan.org/tx/0xc3435fcaf38e37af16a7a1df545f8bdc2e93124ecd8670faf4bb9c2815661617) |
-| CallbackProxy `depositTo(ProtectedVault, 0.002 ETH)` Tx | Base Sepolia (`84532`) | [`0xf7a1a7b3367f542ab0f45602eed5f5b1e879f58edc26382acf9a84eca26773ad`](https://sepolia.basescan.org/tx/0xf7a1a7b3367f542ab0f45602eed5f5b1e879f58edc26382acf9a84eca26773ad) |
-| Origin `configureGuard` Re-sync Tx (Block `60505393`) | Base Sepolia (`84532`) | [`0xcf1718da0e3a3d7c22e6336b05b24c41d14cd6255b787dd06ccf61650c19c147`](https://sepolia.basescan.org/tx/0xcf1718da0e3a3d7c22e6336b05b24c41d14cd6255b787dd06ccf61650c19c147) |
-| Origin `PriceUpdated` Trigger Tx (`$1,750`, Block `60505478`) | Base Sepolia (`84532`) | [`0xaf3ba7b349744de7211c8d71e7601525155fed5d3e46239e7692a305075897aa`](https://sepolia.basescan.org/tx/0xaf3ba7b349744de7211c8d71e7601525155fed5d3e46239e7692a305075897aa) |
+Foundry test suite (`forge test -vvv`) passes **`9 passed; 0 failed; 0 skipped`**:
+- `test_EndToEnd_OriginToOmniSystemToCallback`
+- `test_MultiUserSimultaneousBatchDispatchAndDedupe`
+- `test_CascadingMultiStepDeleverage`
+- `test_CrossChainOriginBaseToUnichainTarget`
+- `test_CallbackSecurityAndSafetyCaps`
+- `test_OnlySystemCanInvokeReact`
+- `test_PausedCircuitBreaker`
+- `test_SubscriptionsAndReserveAccounting`
+- `testFuzz_DeleverageConservesDebtAndCollateral` (`256 runs`)
