@@ -196,7 +196,9 @@ contract ProtectedVault is AbstractCallback {
         if (guard.dailyCount >= MAX_DAILY_PROTECTIONS) revert DailyCapReached();
 
         Position storage pos = positions[user];
-        if (pos.debtUsdE8 == 0 || pos.collateralWei == 0) revert TriggerConditionNotMet();
+        if (pos.debtUsdE8 == 0 || pos.collateralWei == 0 || pos.asset != guard.asset) {
+            revert TriggerConditionNotMet();
+        }
 
         uint256 hfBefore = getHealthFactorBps(user, triggerPriceE8);
         bool priceTriggered = triggerPriceE8 <= guard.stopLossPriceE8;

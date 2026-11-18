@@ -124,7 +124,7 @@ contract ReactiveVaultGuard is AbstractReactive {
         for (uint256 i = 0; i < len; ++i) {
             address user = watchers[i];
             WatchedGuard storage guard = watchedGuards[user];
-            if (!guard.enabled) continue;
+            if (!guard.enabled || guard.asset != asset) continue;
             if (newPriceE8 > guard.stopLossPriceE8) continue;
             if (log.block_number <= guard.lastTriggeredBlock) continue;
 

@@ -69,13 +69,12 @@ Additional verified checks:
 
 ## Deployed Contract Addresses & Transaction Hashes
 
-Replace the placeholders below after running `script/DeployOriginAndCallback.s.sol`, `script/DeployReactive.s.sol`, and `python scripts/guard_cli.py trigger-crash`:
-
 | Item | Network | Value |
 | --- | --- | --- |
-| `PriceOracle` Address | Base Sepolia (`84532`) | `<DEPLOYED_PRICE_ORACLE_ADDRESS>` |
-| `ProtectedVault` Address | Base Sepolia (`84532`) | `<DEPLOYED_PROTECTED_VAULT_ADDRESS>` |
-| `ReactiveVaultGuard` Address | Reactive Lasna (`5318007`) | `<DEPLOYED_REACTIVE_VAULT_GUARD_ADDRESS>` |
-| Origin `PriceUpdated` Crash Tx | Base Sepolia (`84532`) | `<ORIGIN_PRICE_UPDATED_TX_HASH>` |
-| Reactive `Callback` Dispatch Tx | Reactive Lasna (`5318007`) | `<REACTIVE_CALLBACK_TX_HASH>` |
-| Destination `ProtectionExecuted` Tx | Base Sepolia (`84532`) | `<DESTINATION_CALLBACK_TX_HASH>` |
+| `PriceOracle` Address | Base Sepolia (`84532`) | [`0x2AfEEC24f2a810D726DB47CAEa3A76AaF6A7D50E`](https://sepolia.basescan.org/address/0x2AfEEC24f2a810D726DB47CAEa3A76AaF6A7D50E) (Deploy Tx: [`0x75e1bae4...a7fad798`](https://sepolia.basescan.org/tx/0x75e1bae43cab67ff29d1b21229607f5f278c001da82fc5cf5abb2796a7fad798)) |
+| `ProtectedVault` Address | Base Sepolia (`84532`) | [`0x5dEE49560fcE0a1bc26EBB6591f58B7A2Af313F1`](https://sepolia.basescan.org/address/0x5dEE49560fcE0a1bc26EBB6591f58B7A2Af313F1) (Deploy Tx: [`0xad2a191e...2bc10353`](https://sepolia.basescan.org/tx/0xad2a191e1e85f5d482aac292d1edcdcb9f3d4e260df0f985f71f260b2bc10353)) |
+| `ReactiveVaultGuard` Address | Reactive Lasna (`5318007`) | [`0x2AfEEC24f2a810D726DB47CAEa3A76AaF6A7D50E`](https://lasna.reactscan.net/address/0x2AfEEC24f2a810D726DB47CAEa3A76AaF6A7D50E) (Block `8636631`, Deploy & Subscribe Tx: [`0xb86b0d0d...09d0777d`](https://lasna.reactscan.net/tx/0xb86b0d0d96c6e94ce5438132b6e00805256499ad59256107cb8e796009d0777d)) |
+| Vault `deposit(0.002 ETH)` Tx | Base Sepolia (`84532`) | [`0x60cb66d8e4acee2c75239f350fb2f4b84ff571a9639d740f05108bee8ff3bdea`](https://sepolia.basescan.org/tx/0x60cb66d8e4acee2c75239f350fb2f4b84ff571a9639d740f05108bee8ff3bdea) |
+| Vault `borrow($3.00 USD)` Tx | Base Sepolia (`84532`) | [`0x158160ddd9d26b191625cbf79fa1db74af691b4a18c7d9c4865d5a8a0385f699`](https://sepolia.basescan.org/tx/0x158160ddd9d26b191625cbf79fa1db74af691b4a18c7d9c4865d5a8a0385f699) |
+| Origin `configureGuard` Tx | Base Sepolia (`84532`) | [`0x640aa152aa1c9134ed5cc0ee53ed2a1691c5e1cc361e9cd34037c97908966273`](https://sepolia.basescan.org/tx/0x640aa152aa1c9134ed5cc0ee53ed2a1691c5e1cc361e9cd34037c97908966273) |
+| Origin `PriceUpdated` Crash Tx (`$2,500 -> $1,800`) | Base Sepolia (`84532`) | [`0xc3435fcaf38e37af16a7a1df545f8bdc2e93124ecd8670faf4bb9c2815661617`](https://sepolia.basescan.org/tx/0xc3435fcaf38e37af16a7a1df545f8bdc2e93124ecd8670faf4bb9c2815661617) |

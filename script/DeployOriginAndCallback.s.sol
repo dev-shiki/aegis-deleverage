@@ -21,7 +21,8 @@ contract DeployOriginAndCallback is Script {
         PriceOracle oracle = new PriceOracle();
         oracle.setPrice(ETH_ASSET, initialEthPriceE8);
 
-        ProtectedVault vault = new ProtectedVault{value: 0.005 ether}(callbackProxy, address(oracle));
+        uint256 vaultFundingWei = vm.envOr("VAULT_CALLBACK_FUNDING_WEI", uint256(0.001 ether));
+        ProtectedVault vault = new ProtectedVault{value: vaultFundingWei}(callbackProxy, address(oracle));
 
         vm.stopBroadcast();
 
